@@ -81,7 +81,7 @@ more detailed examples of different features.
 Currently in a very early stage of development, so the API is changing as usability issues occur,
 or new features are supported.
 
-Builds against XGBoost 0.81.
+Builds against XGBoost 2.0.3.
 
 ### Platforms
 
