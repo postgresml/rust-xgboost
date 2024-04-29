@@ -149,34 +149,7 @@ impl Booster {
         };
 
         let mut bst = Booster::new_with_cached_dmats(&params.booster_params, &cached_dmats)?;
-        //let num_parallel_tree = 1;
-
-        // load distributed code checkpoint from rabit
-        let version = unsafe { xgboost_sys::RabitVersionNumber() };
-        debug!("Loaded Rabit checkpoint: version={}", version);
-        assert!(unsafe { xgboost_sys::RabitGetWorldSize() != 1 || version == 0 });
-
-        let _rank = unsafe { xgboost_sys::RabitGetRank() };
-        let start_iteration = version / 2;
-        //let mut nboost = start_iteration;
-
-        for i in start_iteration..params.boost_rounds as i32 {
-            // distributed code: need to resume to this point
-            // skip first update if a recovery step
-            if version % 2 == 0 {
-                if let Some(objective_fn) = params.custom_objective_fn {
-                    debug!("Boosting in round: {}", i);
-                    bst.update_custom(params.dtrain, objective_fn)?;
-                } else {
-                    debug!("Updating in round: {}", i);
-                    bst.update(params.dtrain, i)?;
-                }
-            }
-
-            assert!(unsafe { xgboost_sys::RabitGetWorldSize() == 1 || version == xgboost_sys::RabitVersionNumber() });
-
-            //nboost += 1;
-
+        for i in 0..params.boost_rounds as i32 {
             if let Some(eval_sets) = params.evaluation_sets {
                 let mut dmat_eval_results = bst.eval_set(eval_sets, i)?;
 
