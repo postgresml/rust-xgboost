@@ -152,7 +152,7 @@ impl Booster {
         //let num_parallel_tree = 1;
 
         // load distributed code checkpoint from rabit
-        let version = bst.load_rabit_checkpoint()?;
+        let version = unsafe { xgboost_sys::RabitVersionNumber() };
         debug!("Loaded Rabit checkpoint: version={}", version);
         assert!(unsafe { xgboost_sys::RabitGetWorldSize() != 1 || version == 0 });
 
@@ -171,7 +171,6 @@ impl Booster {
                     debug!("Updating in round: {}", i);
                     bst.update(params.dtrain, i)?;
                 }
-                bst.save_rabit_checkpoint()?;
             }
 
             assert!(unsafe { xgboost_sys::RabitGetWorldSize() == 1 || version == xgboost_sys::RabitVersionNumber() });
@@ -328,7 +327,7 @@ impl Booster {
         let name = "default";
         let mut eval = self.eval_set(&[(dmat, name)], 0)?;
         let mut result = HashMap::new();
-        eval.remove(name).unwrap().into_iter().for_each(|(k, v)| {
+        eval.swap_remove(name).unwrap().into_iter().for_each(|(k, v)| {
             result.insert(k.to_owned(), v);
         });
 
@@ -564,16 +563,6 @@ impl Booster {
         Ok(out_vec.join("\n"))
     }
 
-    pub(crate) fn load_rabit_checkpoint(&self) -> XGBResult<i32> {
-        let mut version = 0;
-        xgb_call!(xgboost_sys::XGBoosterLoadRabitCheckpoint(self.handle, &mut version))?;
-        Ok(version)
-    }
-
-    pub(crate) fn save_rabit_checkpoint(&self) -> XGBResult<()> {
-        xgb_call!(xgboost_sys::XGBoosterSaveRabitCheckpoint(self.handle))
-    }
-
     pub fn set_param(&mut self, name: &str, value: &str) -> XGBResult<()> {
         let name = ffi::CString::new(name).unwrap();
         let value = ffi::CString::new(value).unwrap();
@@ -742,11 +731,6 @@ mod tests {
         assert!(res.is_ok());
     }
 
-    #[test]
-    fn load_rabit_version() {
-        let version = load_test_booster().load_rabit_checkpoint().unwrap();
-        assert_eq!(version, 0);
-    }
 
     #[test]
     fn get_set_attr() {
@@ -841,7 +825,7 @@ mod tests {
         assert_eq!(*train_metrics.get("map@4-").unwrap(), 1.0);
 
         let test_metrics = booster.evaluate(&dmat_test).unwrap();
-        assert_eq!(*test_metrics.get("logloss").unwrap(), 0.006919953);
+        assert_eq!(*test_metrics.get("logloss").unwrap(), 0.0069199526);
         assert_eq!(*test_metrics.get("map@4-").unwrap(), 1.0);
 
         let v = booster.predict(&dmat_test).unwrap();
