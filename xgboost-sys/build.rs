@@ -34,7 +34,7 @@ fn main() {
         .define("BUILD_WITH_CUDA", "ON")
         .define("BUILD_WITH_CUDA_CUB", "ON");
 
-    #[cfg(target_os = "macos")]
+    #[cfg(all(target_os = "macos", target_arch = "x86_64"))]
     {
         let path = PathBuf::from("/opt/homebrew/"); // check for m1 vs intel config
         if let Ok(_dir) = std::fs::read_dir(&path) {
