@@ -148,8 +148,9 @@ impl Booster {
             dmats
         };
 
-        let bst = Booster::new_with_cached_dmats(&params.booster_params, &cached_dmats)?;
+        let mut bst = Booster::new_with_cached_dmats(&params.booster_params, &cached_dmats)?;
         for i in 0..params.boost_rounds as i32 {
+			bst.update(params.dtrain, i)?;
             if let Some(eval_sets) = params.evaluation_sets {
                 let mut dmat_eval_results = bst.eval_set(eval_sets, i)?;
 
